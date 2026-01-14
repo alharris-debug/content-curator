@@ -1,23 +1,49 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
+import Login from './pages/Login'
+import PageContainer from './components/layout/PageContainer'
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
 
 function Placeholder({ name }) {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-3xl font-bold text-gray-800">{name}</h1>
-    </div>
+    <PageContainer title={name}>
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">This page is under construction.</p>
+      </div>
+    </PageContainer>
   )
 }
 
 function App() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <Routes>
-      <Route path="/" element={<Placeholder name="Dashboard" />} />
-      <Route path="/login" element={<Placeholder name="Login" />} />
-      <Route path="/clients/new" element={<Placeholder name="Add Client" />} />
-      <Route path="/clients/:id" element={<Placeholder name="Edit Client" />} />
-      <Route path="/generate" element={<Placeholder name="Generate Posts" />} />
-      <Route path="/history" element={<Placeholder name="History" />} />
-      <Route path="/settings" element={<Placeholder name="Settings" />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/" element={<ProtectedRoute><Placeholder name="Clients" /></ProtectedRoute>} />
+      <Route path="/clients/new" element={<ProtectedRoute><Placeholder name="Add Client" /></ProtectedRoute>} />
+      <Route path="/clients/:id" element={<ProtectedRoute><Placeholder name="Edit Client" /></ProtectedRoute>} />
+      <Route path="/generate" element={<ProtectedRoute><Placeholder name="Generate Posts" /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><Placeholder name="History" /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Placeholder name="Settings" /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
