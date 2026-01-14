@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import PageContainer from './components/layout/PageContainer'
 
 function ProtectedRoute({ children }) {
@@ -37,7 +38,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={<ProtectedRoute><Placeholder name="Clients" /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/clients/new" element={<ProtectedRoute><Placeholder name="Add Client" /></ProtectedRoute>} />
       <Route path="/clients/:id" element={<ProtectedRoute><Placeholder name="Edit Client" /></ProtectedRoute>} />
       <Route path="/generate" element={<ProtectedRoute><Placeholder name="Generate Posts" /></ProtectedRoute>} />
