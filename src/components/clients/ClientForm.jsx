@@ -9,6 +9,7 @@ export default function ClientForm({ client, onSave, onCancel, onAnalyze, isLoad
     brandVoice: client?.brandVoice || '',
     scrapedContent: client?.scrapedContent || { services: [], aboutText: '', keyPhrases: [] },
   })
+  const [newService, setNewService] = useState('')
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -37,6 +38,28 @@ export default function ClientForm({ client, onSave, onCancel, onAnalyze, isLoad
   const handleSubmit = (e) => {
     e.preventDefault()
     onSave({ ...client, ...formData })
+  }
+
+  const handleAddService = () => {
+    if (!newService.trim()) return
+    setFormData((prev) => ({
+      ...prev,
+      scrapedContent: {
+        ...prev.scrapedContent,
+        services: [...(prev.scrapedContent?.services || []), newService.trim()],
+      },
+    }))
+    setNewService('')
+  }
+
+  const handleRemoveService = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      scrapedContent: {
+        ...prev.scrapedContent,
+        services: prev.scrapedContent.services.filter((_, i) => i !== index),
+      },
+    }))
   }
 
   return (
@@ -85,16 +108,31 @@ export default function ClientForm({ client, onSave, onCancel, onAnalyze, isLoad
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </div>
 
-      {formData.scrapedContent?.services?.length > 0 && (
-        <div className="bg-gray-50 p-4 rounded-md">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Detected Services</h4>
-          <div className="flex flex-wrap gap-2">
-            {formData.scrapedContent.services.map((service, i) => (
-              <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">{service}</span>
-            ))}
-          </div>
+      <div className="bg-gray-50 p-4 rounded-md">
+        <h4 className="text-sm font-medium text-gray-700 mb-2">Services</h4>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {formData.scrapedContent?.services?.length > 0 ? (
+            formData.scrapedContent.services.map((service, i) => (
+              <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded flex items-center gap-1">
+                {service}
+                <button type="button" onClick={() => handleRemoveService(i)}
+                  className="ml-1 text-blue-600 hover:text-red-600 font-bold">&times;</button>
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-gray-500">No services added yet</span>
+          )}
         </div>
-      )}
+        <div className="flex gap-2">
+          <input type="text" value={newService} onChange={(e) => setNewService(e.target.value)}
+            placeholder="Add a service (e.g., Massage Therapy)"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddService() } }} />
+          <button type="button" onClick={handleAddService}
+            className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Add</button>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">Services are used to generate relevant post content</p>
+      </div>
 
       <div className="flex gap-3 pt-4">
         <button type="submit" disabled={isLoading || isAnalyzing}
