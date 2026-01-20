@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import PageContainer from '../components/layout/PageContainer'
+import UsageDisplay from '../components/subscription/UsageDisplay'
 import { useAuth } from '../contexts/AuthContext'
 import { storage } from '../services/storage'
 import { claude } from '../services/ai/ClaudeService'
@@ -8,6 +9,7 @@ export default function Settings() {
   const { user, logout } = useAuth()
   const fileInputRef = useRef(null)
 
+  const [clientCount, setClientCount] = useState(0)
   const [apiKey, setApiKey] = useState('')
   const [isTestingApi, setIsTestingApi] = useState(false)
   const [apiStatus, setApiStatus] = useState(null)
@@ -19,8 +21,12 @@ export default function Settings() {
   }, [])
 
   const loadSettings = async () => {
-    const settings = await storage.getSettings()
+    const [settings, clients] = await Promise.all([
+      storage.getSettings(),
+      storage.getClients(),
+    ])
     if (settings.apiKey) setApiKey(settings.apiKey)
+    setClientCount(clients.length)
   }
 
   const handleSaveApiKey = async () => {
@@ -82,6 +88,8 @@ export default function Settings() {
   return (
     <PageContainer title="Settings">
       <div className="max-w-2xl space-y-6">
+        <UsageDisplay clientCount={clientCount} />
+
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Account</h2>
           <div className="space-y-4">

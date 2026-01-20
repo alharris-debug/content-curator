@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import PageContainer from '../components/layout/PageContainer'
 import ClientSelector from '../components/clients/ClientSelector'
 import PostCard from '../components/posts/PostCard'
+import UpgradePrompt from '../components/subscription/UpgradePrompt'
+import { useSubscription } from '../contexts/SubscriptionContext'
 import { storage } from '../services/storage'
 import { claude } from '../services/ai/ClaudeService'
 
@@ -16,11 +18,13 @@ const LIFESTYLE_CATEGORIES = [
 ]
 
 export default function Generator() {
+  const { subscription, canGenerate, incrementUsage, getUsageStats } = useSubscription()
   const [clients, setClients] = useState([])
   const [selectedClientId, setSelectedClientId] = useState(null)
   const [selectedClient, setSelectedClient] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
 
   const [servicePost, setServicePost] = useState(null)
   const [serviceFocus, setServiceFocus] = useState('')
@@ -57,15 +61,31 @@ export default function Generator() {
     return posts.map((p) => p.topic)
   }
 
+  const checkAndGenerate = async (generateFn) => {
+    if (!canGenerate()) {
+      setShowUpgradePrompt(true)
+      return false
+    }
+    const result = await generateFn()
+    if (result) {
+      await incrementUsage()
+    }
+    return result
+  }
+
   const handleGenerateService = async () => {
     if (!selectedClient) return
     if (!claude.isInitialized()) { setError('Please add your Claude API key in Settings first.'); return }
+
     setIsGeneratingService(true)
     setError(null)
     try {
-      const recentTopics = await getRecentTopics(selectedClient.id)
-      const result = await claude.generateServicePost(selectedClient, serviceFocus || null, recentTopics)
-      setServicePost(result)
+      await checkAndGenerate(async () => {
+        const recentTopics = await getRecentTopics(selectedClient.id)
+        const result = await claude.generateServicePost(selectedClient, serviceFocus || null, recentTopics)
+        setServicePost(result)
+        return result
+      })
     } catch (err) { setError(err.message || 'Failed to generate post') }
     finally { setIsGeneratingService(false) }
   }
@@ -73,12 +93,16 @@ export default function Generator() {
   const handleGenerateLifestyle = async () => {
     if (!selectedClient) return
     if (!claude.isInitialized()) { setError('Please add your Claude API key in Settings first.'); return }
+
     setIsGeneratingLifestyle(true)
     setError(null)
     try {
-      const recentTopics = await getRecentTopics(selectedClient.id)
-      const result = await claude.generateLifestylePost(selectedClient, lifestyleCategory, recentTopics)
-      setLifestylePost(result)
+      await checkAndGenerate(async () => {
+        const recentTopics = await getRecentTopics(selectedClient.id)
+        const result = await claude.generateLifestylePost(selectedClient, lifestyleCategory, recentTopics)
+        setLifestylePost(result)
+        return result
+      })
     } catch (err) { setError(err.message || 'Failed to generate post') }
     finally { setIsGeneratingLifestyle(false) }
   }
@@ -88,8 +112,11 @@ export default function Generator() {
     setIsGeneratingService(true)
     setError(null)
     try {
-      const result = await claude.regeneratePost(selectedClient, servicePost.topic, prompt || 'Generate a fresh variation')
-      setServicePost(result)
+      await checkAndGenerate(async () => {
+        const result = await claude.regeneratePost(selectedClient, servicePost.topic, prompt || 'Generate a fresh variation')
+        setServicePost(result)
+        return result
+      })
     } catch (err) { setError(err.message || 'Failed to regenerate post') }
     finally { setIsGeneratingService(false) }
   }
@@ -99,8 +126,11 @@ export default function Generator() {
     setIsGeneratingLifestyle(true)
     setError(null)
     try {
-      const result = await claude.regeneratePost(selectedClient, lifestylePost.topic, prompt || 'Generate a fresh variation')
-      setLifestylePost(result)
+      await checkAndGenerate(async () => {
+        const result = await claude.regeneratePost(selectedClient, lifestylePost.topic, prompt || 'Generate a fresh variation')
+        setLifestylePost(result)
+        return result
+      })
     } catch (err) { setError(err.message || 'Failed to regenerate post') }
     finally { setIsGeneratingLifestyle(false) }
   }
@@ -120,9 +150,30 @@ export default function Generator() {
 
   if (isLoading) return <PageContainer title="Generate Posts"><div className="text-gray-600">Loading...</div></PageContainer>
 
+  const stats = getUsageStats()
+
   return (
     <PageContainer title="Generate Posts">
+      {showUpgradePrompt && subscription && (
+        <UpgradePrompt
+          type="generations"
+          currentTier={subscription.tier}
+          onClose={() => setShowUpgradePrompt(false)}
+        />
+      )}
+
       {error && <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>}
+
+      {subscription && (
+        <div className="mb-4 flex items-center justify-between bg-white rounded-lg shadow px-4 py-2">
+          <span className="text-sm text-gray-600">
+            Generations: <span className="font-medium">{stats.generationsUsed} / {stats.generationsLimit}</span>
+          </span>
+          {!canGenerate() && (
+            <span className="text-sm text-red-600 font-medium">Limit reached</span>
+          )}
+        </div>
+      )}
 
       {clients.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -150,7 +201,7 @@ export default function Generator() {
                         <option key={i} value={s}>{s}</option>
                       ))}
                     </select>
-                    <button onClick={handleGenerateService} disabled={isGeneratingService}
+                    <button onClick={handleGenerateService} disabled={isGeneratingService || !canGenerate()}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                       {isGeneratingService ? 'Generating...' : 'Generate'}
                     </button>
@@ -171,7 +222,7 @@ export default function Generator() {
                         <option key={cat.id} value={cat.id}>{cat.label}</option>
                       ))}
                     </select>
-                    <button onClick={handleGenerateLifestyle} disabled={isGeneratingLifestyle}
+                    <button onClick={handleGenerateLifestyle} disabled={isGeneratingLifestyle || !canGenerate()}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                       {isGeneratingLifestyle ? 'Generating...' : 'Generate'}
                     </button>

@@ -196,6 +196,125 @@ export class SupabaseService extends StorageService {
     return { apiKey: data.api_key || '', version: '1.0' }
   }
 
+  // Subscription methods
+  async getSubscription() {
+    const user = await this.getUser()
+    if (!user) return null
+
+    const { data, error } = await this.supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+
+    if (error || !data) return null
+    return {
+      id: data.id,
+      tier: data.tier,
+      status: data.status,
+      stripeCustomerId: data.stripe_customer_id,
+      stripeSubscriptionId: data.stripe_subscription_id,
+      currentPeriodStart: data.current_period_start,
+      currentPeriodEnd: data.current_period_end,
+    }
+  }
+
+  async createSubscription(tier = 'starter') {
+    const user = await this.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const now = new Date()
+    const periodEnd = new Date(now)
+    periodEnd.setMonth(periodEnd.getMonth() + 1)
+
+    const { data, error } = await this.supabase
+      .from('subscriptions')
+      .insert({
+        user_id: user.id,
+        tier,
+        status: 'active',
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  // Usage methods
+  async getCurrentUsage() {
+    const user = await this.getUser()
+    if (!user) return null
+
+    const sub = await this.getSubscription()
+    if (!sub) return null
+
+    const { data, error } = await this.supabase
+      .from('usage')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('period_start', sub.currentPeriodStart)
+      .single()
+
+    if (error || !data) {
+      // No usage record for this period yet, return zeros
+      return {
+        generationsUsed: 0,
+        periodStart: sub.currentPeriodStart,
+        periodEnd: sub.currentPeriodEnd,
+      }
+    }
+
+    return {
+      id: data.id,
+      generationsUsed: data.generations_used,
+      periodStart: data.period_start,
+      periodEnd: data.period_end,
+    }
+  }
+
+  async incrementUsage() {
+    const user = await this.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const sub = await this.getSubscription()
+    if (!sub) throw new Error('No subscription found')
+
+    // Try to update existing usage record
+    const { data: existing } = await this.supabase
+      .from('usage')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('period_start', sub.currentPeriodStart)
+      .single()
+
+    if (existing) {
+      const { error } = await this.supabase
+        .from('usage')
+        .update({
+          generations_used: existing.generations_used + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+
+      if (error) throw error
+    } else {
+      // Create new usage record for this period
+      const { error } = await this.supabase
+        .from('usage')
+        .insert({
+          user_id: user.id,
+          period_start: sub.currentPeriodStart,
+          period_end: sub.currentPeriodEnd,
+          generations_used: 1,
+        })
+
+      if (error) throw error
+    }
+  }
+
   // Export/Import
   async exportAll() {
     const [clients, posts, settings] = await Promise.all([
