@@ -17,6 +17,24 @@ const LIFESTYLE_CATEGORIES = [
   { id: 'local', label: 'Local Event Idea' },
 ]
 
+// Session storage helpers for draft posts
+const getDraftKey = (clientId, type) => `content-curator-draft-${clientId}-${type}`
+
+const saveDraft = (clientId, type, post) => {
+  if (post) {
+    sessionStorage.setItem(getDraftKey(clientId, type), JSON.stringify(post))
+  }
+}
+
+const loadDraft = (clientId, type) => {
+  const saved = sessionStorage.getItem(getDraftKey(clientId, type))
+  return saved ? JSON.parse(saved) : null
+}
+
+const clearDraft = (clientId, type) => {
+  sessionStorage.removeItem(getDraftKey(clientId, type))
+}
+
 export default function Generator() {
   const { subscription, canGenerate, incrementUsage, getUsageStats } = useSubscription()
   const [clients, setClients] = useState([])
@@ -40,10 +58,13 @@ export default function Generator() {
     if (selectedClientId) {
       const client = clients.find((c) => c.id === selectedClientId)
       setSelectedClient(client || null)
-      setServicePost(null)
-      setLifestylePost(null)
+      // Load any saved drafts for this client
+      setServicePost(loadDraft(selectedClientId, 'service'))
+      setLifestylePost(loadDraft(selectedClientId, 'lifestyle'))
     } else {
       setSelectedClient(null)
+      setServicePost(null)
+      setLifestylePost(null)
     }
   }, [selectedClientId, clients])
 
@@ -82,6 +103,7 @@ export default function Generator() {
         const recentTopics = await getRecentTopics(selectedClient.id)
         const result = await claude.generateServicePost(selectedClient, serviceFocus || null, recentTopics)
         setServicePost(result)
+        saveDraft(selectedClient.id, 'service', result)
         return result
       })
     } catch (err) { setError(err.message || 'Failed to generate post') }
@@ -98,6 +120,7 @@ export default function Generator() {
         const recentTopics = await getRecentTopics(selectedClient.id)
         const result = await claude.generateLifestylePost(selectedClient, lifestyleCategory, recentTopics)
         setLifestylePost(result)
+        saveDraft(selectedClient.id, 'lifestyle', result)
         return result
       })
     } catch (err) { setError(err.message || 'Failed to generate post') }
@@ -112,6 +135,7 @@ export default function Generator() {
       await checkAndGenerate(async () => {
         const result = await claude.regeneratePost(selectedClient, servicePost.topic, prompt || 'Generate a fresh variation')
         setServicePost(result)
+        saveDraft(selectedClient.id, 'service', result)
         return result
       })
     } catch (err) { setError(err.message || 'Failed to regenerate post') }
@@ -126,6 +150,7 @@ export default function Generator() {
       await checkAndGenerate(async () => {
         const result = await claude.regeneratePost(selectedClient, lifestylePost.topic, prompt || 'Generate a fresh variation')
         setLifestylePost(result)
+        saveDraft(selectedClient.id, 'lifestyle', result)
         return result
       })
     } catch (err) { setError(err.message || 'Failed to regenerate post') }
@@ -141,6 +166,10 @@ export default function Generator() {
         platformsPosted: platforms,
         topic: post.topic,
       })
+      // Clear the draft after saving
+      clearDraft(selectedClient.id, type)
+      if (type === 'service') setServicePost(null)
+      else setLifestylePost(null)
       alert('Post saved to history!')
     } catch (err) { setError('Failed to save post') }
   }
