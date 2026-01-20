@@ -1,2 +1,2 @@
-import { LocalStorageService } from './LocalStorageService'
-export const storage = new LocalStorageService()
+import { SupabaseService } from './SupabaseService'
+export const storage = new SupabaseService()

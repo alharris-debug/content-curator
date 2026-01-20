@@ -5,16 +5,12 @@ import { storage } from '../services/storage'
 import { claude } from '../services/ai/ClaudeService'
 
 export default function Settings() {
-  const { changePassword } = useAuth()
+  const { user, logout } = useAuth()
   const fileInputRef = useRef(null)
 
   const [apiKey, setApiKey] = useState('')
   const [isTestingApi, setIsTestingApi] = useState(false)
   const [apiStatus, setApiStatus] = useState(null)
-
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [passwordMessage, setPasswordMessage] = useState(null)
 
   const [importMessage, setImportMessage] = useState(null)
 
@@ -45,17 +41,6 @@ export default function Settings() {
     finally { setIsTestingApi(false) }
   }
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault()
-    setPasswordMessage(null)
-    const result = await changePassword(currentPassword, newPassword)
-    if (result.success) {
-      setPasswordMessage({ type: 'success', message: 'Password changed successfully!' })
-      setCurrentPassword('')
-      setNewPassword('')
-    } else { setPasswordMessage({ type: 'error', message: result.error }) }
-  }
-
   const handleExport = async () => {
     try {
       const data = await storage.exportAll()
@@ -78,7 +63,7 @@ export default function Settings() {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
-      if (!window.confirm('This will replace all existing data. Are you sure?')) {
+      if (!window.confirm('This will import data into your account. Existing clients with the same name may be duplicated. Continue?')) {
         fileInputRef.current.value = ''
         return
       }
@@ -90,9 +75,27 @@ export default function Settings() {
     fileInputRef.current.value = ''
   }
 
+  const handleLogout = async () => {
+    await logout()
+  }
+
   return (
     <PageContainer title="Settings">
       <div className="max-w-2xl space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Account</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <p className="text-gray-600">{user?.email || 'Not logged in'}</p>
+            </div>
+            <button onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">API Configuration</h2>
           <div className="space-y-4">
@@ -113,24 +116,6 @@ export default function Settings() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Change App Password</h2>
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-            </div>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Change Password</button>
-            {passwordMessage && <div className={`p-3 rounded ${passwordMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{passwordMessage.message}</div>}
-          </form>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Data Management</h2>
           <div className="space-y-4">
             <div>
@@ -142,7 +127,7 @@ export default function Settings() {
                 <span className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 cursor-pointer inline-block">Import Data</span>
                 <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
               </label>
-              <p className="mt-1 text-sm text-gray-500">Restore from a backup file. This will replace existing data.</p>
+              <p className="mt-1 text-sm text-gray-500">Import from a backup file.</p>
             </div>
             {importMessage && <div className={`p-3 rounded ${importMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{importMessage.message}</div>}
           </div>
@@ -151,9 +136,9 @@ export default function Settings() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">About</h2>
           <div className="text-sm text-gray-600 space-y-1">
-            <p><strong>Version:</strong> 1.0.0</p>
-            <p><strong>Storage:</strong> Local Storage (browser only)</p>
-            <p className="text-yellow-600">Data is stored in this browser only. Use Export to backup your data.</p>
+            <p><strong>Version:</strong> 2.0.0</p>
+            <p><strong>Storage:</strong> Supabase Cloud</p>
+            <p className="text-green-600">Your data is securely stored in the cloud and synced across devices.</p>
           </div>
         </div>
       </div>

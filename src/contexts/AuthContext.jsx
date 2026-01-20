@@ -4,47 +4,91 @@ import { storage } from '../services/storage'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const sessionAuth = sessionStorage.getItem('content-curator-auth')
-    if (sessionAuth === 'true') setIsAuthenticated(true)
-    setIsLoading(false)
+    // Check current session
+    const checkUser = async () => {
+      try {
+        const currentUser = await storage.getUser()
+        if (currentUser) {
+          setUser(currentUser)
+          setIsAuthenticated(true)
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    checkUser()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = storage.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user)
+        setIsAuthenticated(true)
+      } else {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+      setIsLoading(false)
+    })
+
+    return () => subscription?.unsubscribe()
   }, [])
 
-  const login = async (password) => {
-    const settings = await storage.getSettings()
-    if (!settings.appPassword) {
-      await storage.saveSettings({ appPassword: password })
-      sessionStorage.setItem('content-curator-auth', 'true')
-      setIsAuthenticated(true)
-      return { success: true, isFirstLogin: true }
+  const signUp = async (email, password) => {
+    try {
+      const data = await storage.signUp(email, password)
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, error: error.message }
     }
-    if (password === settings.appPassword) {
-      sessionStorage.setItem('content-curator-auth', 'true')
+  }
+
+  const login = async (email, password) => {
+    try {
+      const data = await storage.signIn(email, password)
+      setUser(data.user)
       setIsAuthenticated(true)
       return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
     }
-    return { success: false, error: 'Incorrect password' }
   }
 
-  const logout = () => {
-    sessionStorage.removeItem('content-curator-auth')
-    setIsAuthenticated(false)
+  const logout = async () => {
+    try {
+      await storage.signOut()
+      setUser(null)
+      setIsAuthenticated(false)
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
-  const changePassword = async (currentPassword, newPassword) => {
-    const settings = await storage.getSettings()
-    if (settings.appPassword && currentPassword !== settings.appPassword) {
-      return { success: false, error: 'Current password is incorrect' }
+  const resetPassword = async (email) => {
+    try {
+      await storage.resetPassword(email)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
     }
-    await storage.saveSettings({ appPassword: newPassword })
-    return { success: true }
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, changePassword }}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
+      isLoading,
+      signUp,
+      login,
+      logout,
+      resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   )
