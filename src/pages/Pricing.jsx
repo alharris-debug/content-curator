@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
 import { useAuth } from '../contexts/AuthContext'
 import { TIERS } from '../config/tiers'
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export default function Pricing() {
   const { user } = useAuth()
@@ -19,21 +18,28 @@ export default function Pricing() {
         ? tier.stripePriceIdMonthly
         : tier.stripePriceIdYearly
 
-      const stripe = await stripePromise
-
-      // Redirect to Stripe Checkout
-      const { error } = await stripe.redirectToCheckout({
-        lineItems: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription',
-        successUrl: `${window.location.origin}/?subscription=success`,
-        cancelUrl: `${window.location.origin}/pricing?canceled=true`,
-        customerEmail: user?.email,
+      // Call our Edge Function to create a checkout session
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId,
+          customerEmail: user?.email,
+          successUrl: `${window.location.origin}/?subscription=success`,
+          cancelUrl: `${window.location.origin}/pricing?canceled=true`,
+        }),
       })
 
-      if (error) {
-        console.error('Stripe error:', error)
-        alert(error.message)
+      const data = await response.json()
+
+      if (data.error) {
+        console.error('Checkout error:', data.error)
+        alert(data.error)
+        return
       }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url
     } catch (err) {
       console.error('Checkout error:', err)
       alert('Failed to start checkout. Please try again.')
