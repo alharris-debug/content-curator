@@ -49,9 +49,8 @@ export default function Generator() {
 
   const loadData = async () => {
     try {
-      const [clientsData, settings] = await Promise.all([storage.getClients(), storage.getSettings()])
+      const clientsData = await storage.getClients()
       setClients(clientsData)
-      if (settings.apiKey) claude.initialize(settings.apiKey)
     } catch (err) { setError('Failed to load data') }
     finally { setIsLoading(false) }
   }
@@ -75,7 +74,6 @@ export default function Generator() {
 
   const handleGenerateService = async () => {
     if (!selectedClient) return
-    if (!claude.isInitialized()) { setError('Please add your Claude API key in Settings first.'); return }
 
     setIsGeneratingService(true)
     setError(null)
@@ -92,7 +90,6 @@ export default function Generator() {
 
   const handleGenerateLifestyle = async () => {
     if (!selectedClient) return
-    if (!claude.isInitialized()) { setError('Please add your Claude API key in Settings first.'); return }
 
     setIsGeneratingLifestyle(true)
     setError(null)

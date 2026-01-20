@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { ANALYZE_WEBSITE_PROMPT, GENERATE_SERVICE_POST_PROMPT, GENERATE_LIFESTYLE_POST_PROMPT, REGENERATE_POST_PROMPT } from './prompts'
 
+const BUILT_IN_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY
+
 class ClaudeService {
   constructor() {
     this.client = null
+    // Auto-initialize with built-in key if available
+    if (BUILT_IN_API_KEY) {
+      this.initialize(BUILT_IN_API_KEY)
+    }
   }
 
   initialize(apiKey) {
@@ -15,7 +21,7 @@ class ClaudeService {
   }
 
   async _sendMessage(prompt) {
-    if (!this.client) throw new Error('Claude API not initialized. Please add your API key in Settings.')
+    if (!this.client) throw new Error('AI service not available. Please contact support.')
 
     try {
       const response = await this.client.messages.create({
@@ -28,7 +34,7 @@ class ClaudeService {
       const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/```\n?([\s\S]*?)\n?```/) || [null, text]
       return JSON.parse(jsonMatch[1] || text)
     } catch (error) {
-      if (error.status === 401) throw new Error('Invalid API key. Please check your key in Settings.')
+      if (error.status === 401) throw new Error('AI service configuration error. Please contact support.')
       if (error.status === 429) throw new Error('Rate limited. Please wait a moment and try again.')
       if (error.message?.includes('JSON')) throw new Error('Failed to parse AI response. Please try again.')
       throw new Error(`AI request failed: ${error.message}`)

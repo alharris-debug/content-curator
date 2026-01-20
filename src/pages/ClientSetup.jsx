@@ -30,11 +30,7 @@ export default function ClientSetup() {
 
   const loadData = async () => {
     try {
-      const [settings, clients] = await Promise.all([
-        storage.getSettings(),
-        storage.getClients(),
-      ])
-      if (settings.apiKey) claude.initialize(settings.apiKey)
+      const clients = await storage.getClients()
       setClientCount(clients.length)
 
       if (id) {
@@ -50,11 +46,6 @@ export default function ClientSetup() {
   }
 
   const handleAnalyze = async (url) => {
-    if (!claude.isInitialized()) {
-      setError('Please add your Claude API key in Settings first.')
-      return null
-    }
-
     if (!canGenerate()) {
       setUpgradeType('generations')
       setShowUpgradePrompt(true)

@@ -3,48 +3,21 @@ import PageContainer from '../components/layout/PageContainer'
 import UsageDisplay from '../components/subscription/UsageDisplay'
 import { useAuth } from '../contexts/AuthContext'
 import { storage } from '../services/storage'
-import { claude } from '../services/ai/ClaudeService'
 
 export default function Settings() {
   const { user, logout } = useAuth()
   const fileInputRef = useRef(null)
 
   const [clientCount, setClientCount] = useState(0)
-  const [apiKey, setApiKey] = useState('')
-  const [isTestingApi, setIsTestingApi] = useState(false)
-  const [apiStatus, setApiStatus] = useState(null)
-
   const [importMessage, setImportMessage] = useState(null)
 
   useEffect(() => {
-    loadSettings()
+    loadData()
   }, [])
 
-  const loadSettings = async () => {
-    const [settings, clients] = await Promise.all([
-      storage.getSettings(),
-      storage.getClients(),
-    ])
-    if (settings.apiKey) setApiKey(settings.apiKey)
+  const loadData = async () => {
+    const clients = await storage.getClients()
     setClientCount(clients.length)
-  }
-
-  const handleSaveApiKey = async () => {
-    await storage.saveSettings({ apiKey })
-    claude.initialize(apiKey)
-    setApiStatus({ type: 'success', message: 'API key saved!' })
-  }
-
-  const handleTestApi = async () => {
-    if (!apiKey) { setApiStatus({ type: 'error', message: 'Please enter an API key first.' }); return }
-    setIsTestingApi(true)
-    setApiStatus(null)
-    try {
-      claude.initialize(apiKey)
-      await claude._sendMessage('Say "API working" in exactly two words.')
-      setApiStatus({ type: 'success', message: 'API connection successful!' })
-    } catch (err) { setApiStatus({ type: 'error', message: err.message }) }
-    finally { setIsTestingApi(false) }
   }
 
   const handleExport = async () => {
@@ -101,25 +74,6 @@ export default function Settings() {
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
               Sign Out
             </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">API Configuration</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Claude API Key</label>
-              <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleSaveApiKey} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Key</button>
-              <button onClick={handleTestApi} disabled={isTestingApi}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50">
-                {isTestingApi ? 'Testing...' : 'Test Connection'}
-              </button>
-            </div>
-            {apiStatus && <div className={`p-3 rounded ${apiStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{apiStatus.message}</div>}
           </div>
         </div>
 
