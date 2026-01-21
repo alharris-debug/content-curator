@@ -5,9 +5,13 @@ import { TIERS } from '../config/tiers'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export default function Pricing() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [isLoading, setIsLoading] = useState(null) // tracks which tier is loading
+
+  const handleLogout = async () => {
+    await logout()
+  }
 
   const handleSubscribe = async (tierKey) => {
     setIsLoading(tierKey)
@@ -49,12 +53,29 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Plan</h1>
-          <p className="text-gray-600">Start generating AI-powered content for your clients</p>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+          <span className="font-semibold text-gray-800">Content Curator</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">{user?.email}</span>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Log out
+            </button>
+          </div>
         </div>
+      </div>
+
+      <div className="py-12 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Plan</h1>
+            <p className="text-gray-600">Start generating AI-powered content for your clients</p>
+          </div>
 
         {/* Billing toggle */}
         <div className="flex justify-center mb-8">
@@ -151,6 +172,7 @@ export default function Pricing() {
         <p className="text-center text-gray-500 text-sm mt-8">
           Secure payment powered by Stripe. Cancel anytime.
         </p>
+        </div>
       </div>
     </div>
   )
