@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { TIERS } from '../config/tiers'
+import { storage } from '../services/storage'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -28,6 +29,10 @@ export default function Pricing() {
       console.log('Price ID:', priceId)
       console.log('User email:', user?.email)
 
+      // Get the session for auth token
+      const session = await storage.getSession()
+      console.log('Session:', session ? 'found' : 'not found')
+
       // Call our Edge Function to create a checkout session
       const url = `${SUPABASE_URL}/functions/v1/create-checkout-session`
       console.log('Fetching:', url)
@@ -37,6 +42,7 @@ export default function Pricing() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
           priceId,

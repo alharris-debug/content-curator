@@ -16,6 +16,11 @@ export class SupabaseService extends StorageService {
     return user
   }
 
+  async getSession() {
+    const { data: { session } } = await this.supabase.auth.getSession()
+    return session
+  }
+
   async signUp(email, password) {
     const { data, error } = await this.supabase.auth.signUp({ email, password })
     if (error) throw error
