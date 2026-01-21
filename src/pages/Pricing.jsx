@@ -14,6 +14,8 @@ export default function Pricing() {
   }
 
   const handleSubscribe = async (tierKey) => {
+    console.log('handleSubscribe called with:', tierKey)
+    console.log('SUPABASE_URL:', SUPABASE_URL)
     setIsLoading(tierKey)
 
     try {
@@ -22,8 +24,14 @@ export default function Pricing() {
         ? tier.stripePriceIdMonthly
         : tier.stripePriceIdYearly
 
+      console.log('Price ID:', priceId)
+      console.log('User email:', user?.email)
+
       // Call our Edge Function to create a checkout session
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout-session`, {
+      const url = `${SUPABASE_URL}/functions/v1/create-checkout-session`
+      console.log('Fetching:', url)
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
