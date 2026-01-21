@@ -5,8 +5,8 @@ export const TIERS = {
     generations: 30,
     monthlyPrice: 15,
     yearlyPrice: 144,
-    stripePriceIdMonthly: 'price_1SrlAW1h7jRjSfp4pt6Hl3oI',
-    stripePriceIdYearly: 'price_1SrlC21h7jRjSfp4yt7A5Ibs',
+    stripePriceIdMonthly: import.meta.env.VITE_STRIPE_PRICE_STARTER_MONTHLY,
+    stripePriceIdYearly: import.meta.env.VITE_STRIPE_PRICE_STARTER_YEARLY,
   },
   pro: {
     name: 'Pro',
@@ -14,8 +14,8 @@ export const TIERS = {
     generations: 100,
     monthlyPrice: 29,
     yearlyPrice: 279,
-    stripePriceIdMonthly: 'price_1SrlAn1h7jRjSfp4XLPoExms',
-    stripePriceIdYearly: 'price_1SrlBo1h7jRjSfp4EKWfXSrl',
+    stripePriceIdMonthly: import.meta.env.VITE_STRIPE_PRICE_PRO_MONTHLY,
+    stripePriceIdYearly: import.meta.env.VITE_STRIPE_PRICE_PRO_YEARLY,
   },
   agency: {
     name: 'Agency',
@@ -23,8 +23,8 @@ export const TIERS = {
     generations: 300,
     monthlyPrice: 59,
     yearlyPrice: 569,
-    stripePriceIdMonthly: 'price_1SrlB81h7jRjSfp4o43oAyLE',
-    stripePriceIdYearly: 'price_1SrlBY1h7jRjSfp4TDH0yVOc',
+    stripePriceIdMonthly: import.meta.env.VITE_STRIPE_PRICE_AGENCY_MONTHLY,
+    stripePriceIdYearly: import.meta.env.VITE_STRIPE_PRICE_AGENCY_YEARLY,
   },
 }
 
