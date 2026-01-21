@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { TIERS } from '../config/tiers'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export default function Pricing() {
   const { user, logout } = useAuth()
@@ -33,7 +34,10 @@ export default function Pricing() {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify({
           priceId,
           customerEmail: user?.email,
