@@ -11,29 +11,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Check if this is a password recovery redirect (hash contains type=recovery)
     const hash = window.location.hash
-    if (hash && hash.includes('type=recovery')) {
-      // Let Supabase process the token, then the onAuthStateChange will handle redirect
-      // Don't set isLoading to false yet - wait for auth state change
-      return
-    }
+    const isRecoveryRedirect = hash && hash.includes('type=recovery')
 
-    // Check current session
-    const checkUser = async () => {
-      try {
-        const currentUser = await storage.getUser()
-        if (currentUser) {
-          setUser(currentUser)
-          setIsAuthenticated(true)
-        }
-      } catch (err) {
-        console.error('Auth check failed:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    checkUser()
-
-    // Listen for auth state changes
+    // Listen for auth state changes - must always be set up
     const { data: { subscription } } = storage.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         // User clicked password reset link - redirect to reset page
@@ -53,6 +33,27 @@ export function AuthProvider({ children }) {
       }
       setIsLoading(false)
     })
+
+    // If this is a recovery redirect, don't check session - wait for auth state change
+    if (isRecoveryRedirect) {
+      return () => subscription?.unsubscribe()
+    }
+
+    // Check current session
+    const checkUser = async () => {
+      try {
+        const currentUser = await storage.getUser()
+        if (currentUser) {
+          setUser(currentUser)
+          setIsAuthenticated(true)
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    checkUser()
 
     return () => subscription?.unsubscribe()
   }, [])
