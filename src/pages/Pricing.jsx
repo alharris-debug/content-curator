@@ -208,17 +208,37 @@ export default function Pricing() {
                 </li>
               </ul>
 
-              <button
-                onClick={() => handleSubscribe(key)}
-                disabled={isLoading !== null}
-                className={`mt-6 w-full py-3 px-4 rounded-md font-medium transition ${
-                  key === 'pro'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                } disabled:opacity-50`}
-              >
-                {isLoading === key ? 'Loading...' : 'Get Started'}
-              </button>
+              {hasActiveSubscription && subscription?.tier === key ? (
+                <button
+                  disabled
+                  className="mt-6 w-full py-3 px-4 rounded-md font-medium bg-green-100 text-green-800 cursor-default"
+                >
+                  Current Plan
+                </button>
+              ) : hasActiveSubscription ? (
+                <Link
+                  to="/settings"
+                  className={`mt-6 w-full py-3 px-4 rounded-md font-medium transition block text-center ${
+                    key === 'pro'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  Manage Subscription
+                </Link>
+              ) : (
+                <button
+                  onClick={() => handleSubscribe(key)}
+                  disabled={isLoading !== null}
+                  className={`mt-6 w-full py-3 px-4 rounded-md font-medium transition ${
+                    key === 'pro'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  } disabled:opacity-50`}
+                >
+                  {isLoading === key ? 'Loading...' : 'Get Started'}
+                </button>
+              )}
             </div>
           ))}
         </div>

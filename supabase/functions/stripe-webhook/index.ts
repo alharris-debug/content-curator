@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
           stripe_subscription_id: subscriptionId,
           current_period_start: periodStart,
           current_period_end: periodEnd,
-        })
+        }, { onConflict: 'user_id' })
 
         if (upsertError) {
           console.error('Supabase upsert error:', upsertError)
