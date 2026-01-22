@@ -9,6 +9,14 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // Check if this is a password recovery redirect (hash contains type=recovery)
+    const hash = window.location.hash
+    if (hash && hash.includes('type=recovery')) {
+      // Let Supabase process the token, then the onAuthStateChange will handle redirect
+      // Don't set isLoading to false yet - wait for auth state change
+      return
+    }
+
     // Check current session
     const checkUser = async () => {
       try {
@@ -27,6 +35,15 @@ export function AuthProvider({ children }) {
 
     // Listen for auth state changes
     const { data: { subscription } } = storage.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked password reset link - redirect to reset page
+        setUser(session.user)
+        setIsAuthenticated(true)
+        setIsLoading(false)
+        window.location.href = '/reset-password'
+        return
+      }
+
       if (session?.user) {
         setUser(session.user)
         setIsAuthenticated(true)
