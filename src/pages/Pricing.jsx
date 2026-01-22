@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../contexts/SubscriptionContext'
 import { TIERS } from '../config/tiers'
 import { storage } from '../services/storage'
 
@@ -8,8 +10,11 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export default function Pricing() {
   const { user, logout } = useAuth()
+  const { subscription } = useSubscription()
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [isLoading, setIsLoading] = useState(null) // tracks which tier is loading
+
+  const hasActiveSubscription = subscription?.status === 'active'
 
   const handleLogout = async () => {
     await logout()
@@ -75,7 +80,17 @@ export default function Pricing() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-          <span className="font-semibold text-gray-800">Content Curator</span>
+          <div className="flex items-center gap-4">
+            {hasActiveSubscription && (
+              <Link to="/" className="text-blue-600 hover:text-blue-800 flex items-center text-sm">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+              </Link>
+            )}
+            <span className="font-semibold text-gray-800">Content Curator</span>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{user?.email}</span>
             <button
