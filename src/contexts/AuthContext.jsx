@@ -79,6 +79,15 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const updatePassword = async (newPassword) => {
+    try {
+      await storage.updatePassword(newPassword)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -87,7 +96,8 @@ export function AuthProvider({ children }) {
       signUp,
       login,
       logout,
-      resetPassword
+      resetPassword,
+      updatePassword
     }}>
       {children}
     </AuthContext.Provider>

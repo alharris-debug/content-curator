@@ -39,7 +39,14 @@ export class SupabaseService extends StorageService {
   }
 
   async resetPassword(email) {
-    const { error } = await this.supabase.auth.resetPasswordForEmail(email)
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
+  async updatePassword(newPassword) {
+    const { error } = await this.supabase.auth.updateUser({ password: newPassword })
     if (error) throw error
   }
 

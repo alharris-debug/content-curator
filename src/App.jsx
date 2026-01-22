@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Pricing from './pages/Pricing'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import ClientSetup from './pages/ClientSetup'
 import Generator from './pages/Generator'
@@ -38,6 +39,7 @@ function App() {
       <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/reset-password" element={<ProtectedRoute><ResetPassword /></ProtectedRoute>} />
       <Route path="/" element={<SubscribedRoute><Dashboard /></SubscribedRoute>} />
       <Route path="/clients/new" element={<SubscribedRoute><ClientSetup /></SubscribedRoute>} />
       <Route path="/clients/:id" element={<SubscribedRoute><ClientSetup /></SubscribedRoute>} />
