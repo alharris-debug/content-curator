@@ -2,11 +2,17 @@ import { useState, useRef, useEffect } from 'react'
 import PageContainer from '../components/layout/PageContainer'
 import UsageDisplay from '../components/subscription/UsageDisplay'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../contexts/SubscriptionContext'
 import { storage } from '../services/storage'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export default function Settings() {
   const { user, logout } = useAuth()
+  const { subscription, tierLimits } = useSubscription()
   const fileInputRef = useRef(null)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   const [clientCount, setClientCount] = useState(0)
   const [importMessage, setImportMessage] = useState(null)
@@ -58,10 +64,79 @@ export default function Settings() {
     await logout()
   }
 
+  const handleManageSubscription = async () => {
+    if (!subscription?.stripeCustomerId) {
+      alert('No subscription found')
+      return
+    }
+    setPortalLoading(true)
+    try {
+      const session = await storage.getSession()
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/create-portal-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          customerId: subscription.stripeCustomerId,
+          returnUrl: window.location.href,
+        }),
+      })
+      const data = await response.json()
+      if (data.error) {
+        alert(data.error)
+        return
+      }
+      window.location.href = data.url
+    } catch (err) {
+      console.error('Portal error:', err)
+      alert('Failed to open subscription management')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
   return (
     <PageContainer title="Settings">
       <div className="max-w-2xl space-y-6">
         <UsageDisplay clientCount={clientCount} />
+
+        {/* Subscription Management */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Subscription</h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-gray-600">
+                Current Plan: <span className="font-semibold text-gray-800">{tierLimits?.name || 'None'}</span>
+              </p>
+              {subscription?.currentPeriodEnd && (
+                <p className="text-sm text-gray-500">
+                  Renews: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleManageSubscription}
+                disabled={portalLoading || !subscription?.stripeCustomerId}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {portalLoading ? 'Loading...' : 'Manage Subscription'}
+              </button>
+              <a
+                href="/pricing"
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              >
+                View Plans
+              </a>
+            </div>
+            <p className="text-sm text-gray-500">
+              Manage billing, update payment method, or cancel your subscription.
+            </p>
+          </div>
+        </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Account</h2>
