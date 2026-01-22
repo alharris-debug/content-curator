@@ -16,9 +16,14 @@ export default function SalesNav() {
             <span className="text-white font-bold text-lg">Sales Tool</span>
             <div className="flex space-x-1">
               <NavLink to="/sales" className={linkClass} end>Scripts</NavLink>
+              <NavLink to="/sales/flows" className={linkClass}>Flows</NavLink>
+              <NavLink to="/sales/pipeline" className={linkClass}>Pipeline</NavLink>
+              <NavLink to="/sales/reddit" className={linkClass}>Reddit</NavLink>
+              <NavLink to="/sales/yelp" className={linkClass}>Yelp</NavLink>
+              <NavLink to="/sales/leads" className={linkClass}>Leads</NavLink>
               <NavLink to="/sales/objections" className={linkClass}>Objections</NavLink>
               <NavLink to="/sales/icp" className={linkClass}>ICP</NavLink>
-              <NavLink to="/sales/video" className={linkClass}>Video Script</NavLink>
+              <NavLink to="/sales/video" className={linkClass}>Video</NavLink>
             </div>
           </div>
           <div className="flex items-center">
