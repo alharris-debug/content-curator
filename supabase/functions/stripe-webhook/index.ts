@@ -19,12 +19,23 @@ Deno.serve(async (req) => {
       const customerEmail = session.customer_email
       const subscriptionId = session.subscription
 
+      console.log('Processing checkout for:', customerEmail, 'subscription:', subscriptionId)
+
       // Get subscription details from Stripe
       const subResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
         headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
       })
       const subscription = await subResponse.json()
-      const priceId = subscription.items.data[0].price.id
+
+      console.log('Stripe subscription response:', JSON.stringify(subscription))
+
+      if (subscription.error) {
+        console.error('Stripe API error:', subscription.error)
+        throw new Error(`Stripe API error: ${subscription.error.message}`)
+      }
+
+      const priceId = subscription.items?.data?.[0]?.price?.id
+      console.log('Price ID:', priceId)
 
       // Map price ID to tier using env vars
       const tierMap: Record<string, string> = {
@@ -36,6 +47,7 @@ Deno.serve(async (req) => {
         [Deno.env.get('STRIPE_PRICE_AGENCY_YEARLY')!]: 'agency',
       }
       const tier = tierMap[priceId] || 'starter'
+      console.log('Mapped tier:', tier)
 
       // Find user by email
       const { data: users } = await supabase.auth.admin.listUsers()
@@ -43,15 +55,31 @@ Deno.serve(async (req) => {
 
       if (user) {
         console.log('Creating subscription for user:', user.id, 'tier:', tier)
-        await supabase.from('subscriptions').upsert({
+
+        const periodStart = subscription.current_period_start
+          ? new Date(subscription.current_period_start * 1000).toISOString()
+          : new Date().toISOString()
+        const periodEnd = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+        const { error: upsertError } = await supabase.from('subscriptions').upsert({
           user_id: user.id,
           tier,
           status: 'active',
           stripe_customer_id: session.customer,
           stripe_subscription_id: subscriptionId,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          current_period_start: periodStart,
+          current_period_end: periodEnd,
         })
+
+        if (upsertError) {
+          console.error('Supabase upsert error:', upsertError)
+          throw upsertError
+        }
+        console.log('Subscription created successfully')
+      } else {
+        console.error('User not found for email:', customerEmail)
       }
     }
 

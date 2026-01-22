@@ -21,18 +21,27 @@ export function SubscriptionProvider({ children }) {
     }
   }, [isAuthenticated, user])
 
-  const loadSubscriptionData = async () => {
+  const loadSubscriptionData = async (retryCount = 0) => {
     setIsLoading(true)
     try {
       const [sub, currentUsage] = await Promise.all([
         storage.getSubscription(),
         storage.getCurrentUsage(),
       ])
+
+      // If coming from checkout and no subscription yet, poll for it
+      const isPostCheckout = window.location.search.includes('subscription=success')
+      if (isPostCheckout && (!sub || sub.status !== 'active') && retryCount < 5) {
+        // Wait 1 second and try again (webhook might still be processing)
+        setTimeout(() => loadSubscriptionData(retryCount + 1), 1000)
+        return // Don't set loading to false, keep showing loading state
+      }
+
       setSubscription(sub)
       setUsage(currentUsage)
+      setIsLoading(false)
     } catch (err) {
       console.error('Failed to load subscription:', err)
-    } finally {
       setIsLoading(false)
     }
   }
