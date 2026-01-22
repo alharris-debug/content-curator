@@ -3,6 +3,8 @@ import { useAuth } from './contexts/AuthContext'
 import { useSubscription } from './contexts/SubscriptionContext'
 import Login from './pages/Login'
 import Pricing from './pages/Pricing'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 import Dashboard from './pages/Dashboard'
 import ClientSetup from './pages/ClientSetup'
 import Generator from './pages/Generator'
@@ -34,6 +36,8 @@ function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/" element={<SubscribedRoute><Dashboard /></SubscribedRoute>} />
       <Route path="/clients/new" element={<SubscribedRoute><ClientSetup /></SubscribedRoute>} />
       <Route path="/clients/:id" element={<SubscribedRoute><ClientSetup /></SubscribedRoute>} />

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSubscription } from '../contexts/SubscriptionContext'
 import { TIERS } from '../config/tiers'
@@ -13,16 +13,23 @@ export default function Pricing() {
   const { subscription } = useSubscription()
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [isLoading, setIsLoading] = useState(null) // tracks which tier is loading
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showCanceled, setShowCanceled] = useState(false)
 
   const hasActiveSubscription = subscription?.status === 'active'
+
+  useEffect(() => {
+    if (searchParams.get('canceled') === 'true') {
+      setShowCanceled(true)
+      setSearchParams({})
+    }
+  }, [searchParams, setSearchParams])
 
   const handleLogout = async () => {
     await logout()
   }
 
   const handleSubscribe = async (tierKey) => {
-    console.log('handleSubscribe called with:', tierKey)
-    console.log('SUPABASE_URL:', SUPABASE_URL)
     setIsLoading(tierKey)
 
     try {
@@ -31,16 +38,11 @@ export default function Pricing() {
         ? tier.stripePriceIdMonthly
         : tier.stripePriceIdYearly
 
-      console.log('Price ID:', priceId)
-      console.log('User email:', user?.email)
-
       // Get the session for auth token
       const session = await storage.getSession()
-      console.log('Session:', session ? 'found' : 'not found')
 
       // Call our Edge Function to create a checkout session
       const url = `${SUPABASE_URL}/functions/v1/create-checkout-session`
-      console.log('Fetching:', url)
 
       const response = await fetch(url, {
         method: 'POST',
@@ -105,6 +107,25 @@ export default function Pricing() {
 
       <div className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
+          {showCanceled && (
+            <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start justify-between">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-yellow-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="font-medium text-yellow-800">Checkout canceled</p>
+                  <p className="text-yellow-700 text-sm">No worries! Select a plan when you're ready.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCanceled(false)} className="text-yellow-500 hover:text-yellow-700">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Plan</h1>
             <p className="text-gray-600">Start generating AI-powered content for your clients</p>
@@ -204,6 +225,12 @@ export default function Pricing() {
 
         <p className="text-center text-gray-500 text-sm mt-8">
           Secure payment powered by Stripe. Cancel anytime.
+        </p>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          <Link to="/terms" className="hover:underline">Terms of Service</Link>
+          {' · '}
+          <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
         </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
@@ -124,6 +124,12 @@ export default function Login() {
             </p>
           )}
         </div>
+
+        <p className="mt-6 text-center text-xs text-gray-500">
+          <Link to="/terms" className="hover:underline">Terms of Service</Link>
+          {' · '}
+          <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   )
