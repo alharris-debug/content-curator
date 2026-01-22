@@ -11,7 +11,7 @@ import ClientSetup from './pages/ClientSetup'
 import Generator from './pages/Generator'
 import History from './pages/History'
 import Settings from './pages/Settings'
-import { ScriptLibrary, ObjectionHandler, ICPReference, VideoScript } from './pages/sales'
+import { ScriptLibrary, ObjectionHandler, ICPReference, VideoScript, ConversationFlows, ProspectPipeline, RedditSearch, LeadGenerator, YelpSearch } from './pages/sales'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -54,6 +54,11 @@ function App() {
       <Route path="/history" element={<SubscribedRoute><History /></SubscribedRoute>} />
       <Route path="/settings" element={<SubscribedRoute><Settings /></SubscribedRoute>} />
       <Route path="/sales" element={<ScriptLibrary />} />
+      <Route path="/sales/flows" element={<ConversationFlows />} />
+      <Route path="/sales/pipeline" element={<ProspectPipeline />} />
+      <Route path="/sales/reddit" element={<RedditSearch />} />
+      <Route path="/sales/yelp" element={<YelpSearch />} />
+      <Route path="/sales/leads" element={<LeadGenerator />} />
       <Route path="/sales/objections" element={<ObjectionHandler />} />
       <Route path="/sales/icp" element={<ICPReference />} />
       <Route path="/sales/video" element={<VideoScript />} />

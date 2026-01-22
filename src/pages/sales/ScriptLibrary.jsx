@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import SalesLayout from '../../components/sales/SalesLayout'
 import CopyButton from '../../components/sales/CopyButton'
 import { scripts, segments, channels, scriptTypes } from '../../config/salesData'
+import { salesService } from '../../services/sales'
 
 function highlightPlaceholders(text) {
   return text.split(/(\[[^\]]+\])/).map((part, i) => {
@@ -17,6 +18,29 @@ export default function ScriptLibrary() {
   const [selectedChannel, setSelectedChannel] = useState('')
   const [selectedType, setSelectedType] = useState('')
   const [expandedScript, setExpandedScript] = useState(null)
+  const [editingScript, setEditingScript] = useState(null)
+  const [editContent, setEditContent] = useState('')
+  const [scriptOverrides, setScriptOverrides] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  // Load script overrides from Supabase on mount
+  useEffect(() => {
+    loadOverrides()
+  }, [])
+
+  const loadOverrides = async () => {
+    try {
+      const overrides = await salesService.getAllScriptOverrides()
+      setScriptOverrides(overrides)
+    } catch (error) {
+      console.error('Failed to load script overrides:', error)
+    }
+  }
+
+  // Get the effective content (override or default)
+  const getScriptContent = (script) => {
+    return scriptOverrides[script.id] || script.content
+  }
 
   const filteredScripts = useMemo(() => {
     return scripts.filter(script => {
@@ -37,6 +61,52 @@ export default function ScriptLibrary() {
 
   const toggleScript = (scriptId) => {
     setExpandedScript(expandedScript === scriptId ? null : scriptId)
+  }
+
+  const startEditing = (script) => {
+    setEditingScript(script.id)
+    setEditContent(getScriptContent(script))
+  }
+
+  const cancelEditing = () => {
+    setEditingScript(null)
+    setEditContent('')
+  }
+
+  const saveEdit = async (scriptId) => {
+    setSaving(true)
+    try {
+      await salesService.saveScriptOverride(scriptId, editContent)
+      setScriptOverrides(prev => ({
+        ...prev,
+        [scriptId]: editContent
+      }))
+      setEditingScript(null)
+      setEditContent('')
+    } catch (error) {
+      console.error('Failed to save script:', error)
+      alert('Failed to save script. Make sure the sales_scripts table exists in Supabase.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const resetToDefault = async (scriptId) => {
+    if (!confirm('Reset this script to the default content?')) return
+
+    setSaving(true)
+    try {
+      await salesService.deleteScriptOverride(scriptId)
+      setScriptOverrides(prev => {
+        const updated = { ...prev }
+        delete updated[scriptId]
+        return updated
+      })
+    } catch (error) {
+      console.error('Failed to reset script:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const getSegmentLabel = (segmentId) => {
@@ -132,6 +202,10 @@ export default function ScriptLibrary() {
       <div className="space-y-4">
         {filteredScripts.map(script => {
           const isExpanded = expandedScript === script.id
+          const isEditing = editingScript === script.id
+          const isCustomized = !!scriptOverrides[script.id]
+          const content = getScriptContent(script)
+
           return (
             <div key={script.id} className="bg-white rounded-lg shadow overflow-hidden">
               {/* Script Header - Clickable */}
@@ -140,7 +214,14 @@ export default function ScriptLibrary() {
                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{script.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-gray-900">{script.title}</h3>
+                    {isCustomized && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                        Customized
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                       {getSegmentLabel(script.segment)}
@@ -152,7 +233,7 @@ export default function ScriptLibrary() {
                       {getTypeLabel(script.type)}
                     </span>
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                      {script.content.length} chars
+                      {content.length} chars
                     </span>
                   </div>
                 </div>
@@ -169,14 +250,67 @@ export default function ScriptLibrary() {
               {/* Expanded Content */}
               {isExpanded && (
                 <div className="px-4 pb-4 border-t border-gray-100">
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <pre className="whitespace-pre-wrap font-sans text-gray-700 text-sm leading-relaxed">
-                      {highlightPlaceholders(script.content)}
-                    </pre>
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <CopyButton text={script.content} />
-                  </div>
+                  {isEditing ? (
+                    /* Edit Mode */
+                    <div className="mt-4">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full h-64 p-4 border border-gray-300 rounded-lg font-sans text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter script content..."
+                      />
+                      <div className="mt-4 flex justify-between">
+                        <div className="text-sm text-gray-500">
+                          {editContent.length} characters
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={cancelEditing}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                            disabled={saving}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => saveEdit(script.id)}
+                            disabled={saving}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* View Mode */
+                    <>
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <pre className="whitespace-pre-wrap font-sans text-gray-700 text-sm leading-relaxed">
+                          {highlightPlaceholders(content)}
+                        </pre>
+                      </div>
+                      <div className="mt-4 flex justify-between items-center">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => startEditing(script)}
+                            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
+                          >
+                            Edit
+                          </button>
+                          {isCustomized && (
+                            <button
+                              onClick={() => resetToDefault(script.id)}
+                              disabled={saving}
+                              className="px-3 py-1.5 text-sm text-orange-600 hover:text-orange-800 border border-orange-300 rounded-md hover:bg-orange-50 disabled:opacity-50"
+                            >
+                              Reset to Default
+                            </button>
+                          )}
+                        </div>
+                        <CopyButton text={content} />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
