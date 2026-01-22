@@ -11,6 +11,7 @@ import ClientSetup from './pages/ClientSetup'
 import Generator from './pages/Generator'
 import History from './pages/History'
 import Settings from './pages/Settings'
+import { ScriptLibrary, ObjectionHandler, ICPReference, VideoScript } from './pages/sales'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -52,6 +53,10 @@ function App() {
       <Route path="/generate" element={<SubscribedRoute><Generator /></SubscribedRoute>} />
       <Route path="/history" element={<SubscribedRoute><History /></SubscribedRoute>} />
       <Route path="/settings" element={<SubscribedRoute><Settings /></SubscribedRoute>} />
+      <Route path="/sales" element={<SubscribedRoute><ScriptLibrary /></SubscribedRoute>} />
+      <Route path="/sales/objections" element={<SubscribedRoute><ObjectionHandler /></SubscribedRoute>} />
+      <Route path="/sales/icp" element={<SubscribedRoute><ICPReference /></SubscribedRoute>} />
+      <Route path="/sales/video" element={<SubscribedRoute><VideoScript /></SubscribedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
