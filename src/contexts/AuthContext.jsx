@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
     // Check if this is a password recovery redirect (hash contains type=recovery)
@@ -16,11 +17,11 @@ export function AuthProvider({ children }) {
     // Listen for auth state changes - must always be set up
     const { data: { subscription } } = storage.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // User clicked password reset link - redirect to reset page
+        // User clicked password reset link - set flag for routing
         setUser(session.user)
         setIsAuthenticated(true)
+        setIsPasswordRecovery(true)
         setIsLoading(false)
-        window.location.href = '/reset-password'
         return
       }
 
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
   const updatePassword = async (newPassword) => {
     try {
       await storage.updatePassword(newPassword)
+      setIsPasswordRecovery(false) // Clear recovery mode after password update
       return { success: true }
     } catch (error) {
       return { success: false, error: error.message }
@@ -111,6 +113,7 @@ export function AuthProvider({ children }) {
       user,
       isAuthenticated,
       isLoading,
+      isPasswordRecovery,
       signUp,
       login,
       logout,

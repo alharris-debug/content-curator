@@ -32,7 +32,13 @@ function SubscribedRoute({ children }) {
 }
 
 function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isPasswordRecovery } = useAuth()
+
+  // If in password recovery mode, always show reset password page
+  if (isPasswordRecovery) {
+    return <ResetPassword />
+  }
+
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
