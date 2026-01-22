@@ -30,4 +30,7 @@ dist-ssr
 # Temp files
 tmpclaude-*
 
+# Worktrees
+.worktrees
+
 .vercel
