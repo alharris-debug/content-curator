@@ -31,7 +31,7 @@ export function SubscriptionProvider({ children }) {
 
       // If coming from checkout and no subscription yet, poll for it
       const isPostCheckout = window.location.search.includes('subscription=success')
-      if (isPostCheckout && (!sub || sub.status !== 'active') && retryCount < 5) {
+      if (isPostCheckout && (!sub || sub.status !== 'active') && retryCount < 10) {
         // Wait 1 second and try again (webhook might still be processing)
         setTimeout(() => loadSubscriptionData(retryCount + 1), 1000)
         return // Don't set loading to false, keep showing loading state

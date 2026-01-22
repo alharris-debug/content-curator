@@ -23,11 +23,40 @@ function SubscribedRoute({ children }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { subscription, isLoading: subLoading } = useSubscription()
 
+  // Check if coming from successful checkout
+  const isPostCheckout = window.location.search.includes('subscription=success')
+
   if (authLoading || subLoading) {
+    // Show special loading screen after checkout
+    if (isPostCheckout) {
+      return (
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">Setting up your account...</p>
+            <p className="text-gray-400 text-sm mt-2">This only takes a moment</p>
+          </div>
+        </div>
+      )
+    }
     return <div className="min-h-screen bg-gray-100 flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!subscription || subscription.status !== 'active') return <Navigate to="/pricing" replace />
+  if (!subscription || subscription.status !== 'active') {
+    // If post-checkout but still no subscription, keep showing loading (polling will continue)
+    if (isPostCheckout) {
+      return (
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">Setting up your account...</p>
+            <p className="text-gray-400 text-sm mt-2">This only takes a moment</p>
+          </div>
+        </div>
+      )
+    }
+    return <Navigate to="/pricing" replace />
+  }
   return children
 }
 
