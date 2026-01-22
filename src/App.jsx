@@ -53,10 +53,10 @@ function App() {
       <Route path="/generate" element={<SubscribedRoute><Generator /></SubscribedRoute>} />
       <Route path="/history" element={<SubscribedRoute><History /></SubscribedRoute>} />
       <Route path="/settings" element={<SubscribedRoute><Settings /></SubscribedRoute>} />
-      <Route path="/sales" element={<SubscribedRoute><ScriptLibrary /></SubscribedRoute>} />
-      <Route path="/sales/objections" element={<SubscribedRoute><ObjectionHandler /></SubscribedRoute>} />
-      <Route path="/sales/icp" element={<SubscribedRoute><ICPReference /></SubscribedRoute>} />
-      <Route path="/sales/video" element={<SubscribedRoute><VideoScript /></SubscribedRoute>} />
+      <Route path="/sales" element={<ScriptLibrary />} />
+      <Route path="/sales/objections" element={<ObjectionHandler />} />
+      <Route path="/sales/icp" element={<ICPReference />} />
+      <Route path="/sales/video" element={<VideoScript />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
